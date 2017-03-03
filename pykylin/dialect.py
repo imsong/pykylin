@@ -139,10 +139,11 @@ class KylinDialect(default.DefaultDialect):
 
     def create_connect_args(self, url):
         opts = url.translate_connect_args()
+        api_prefix = '/kylin/api/'
         args = {
             'username': opts['username'],
             'password': opts['password'],
-            'endpoint': 'http://%s:%s/%s' % (opts['host'], opts['port'], opts['database'])
+            'endpoint': 'http://%s:%s/%s' % (opts['host'], opts['port'], api_prefix)
         }
         args.update(url.query)
         return [], args
