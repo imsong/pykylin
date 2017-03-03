@@ -5,6 +5,7 @@ from sqlalchemy.sql.compiler import *
 from sqlalchemy.engine import default
 from .types import KYLIN_TYPE_MAP
 
+
 class KylinCompiler(SQLCompiler):
 
     def visit_label(self, label,
@@ -17,7 +18,7 @@ class KylinCompiler(SQLCompiler):
         # or ORDER BY clause of a select.  dialect-specific compilers
         # can modify this behavior.
         render_label_with_as = (within_columns_clause and not
-        within_label_clause)
+                                within_label_clause)
         render_label_only = render_label_as_label is label
 
         if render_label_only or render_label_with_as:
@@ -43,8 +44,8 @@ class KylinCompiler(SQLCompiler):
             return label.element._compiler_dispatch(
                 self, within_columns_clause=True,
                 within_label_clause=True, **kw) + \
-                   OPERATORS[operators.as_] + \
-                   self.preparer.format_label(label, labelname)
+                OPERATORS[operators.as_] + \
+                self.preparer.format_label(label, labelname)
         elif render_label_only:
             return self.preparer.format_label(label, labelname)
         else:
@@ -93,15 +94,17 @@ class KylinCompiler(SQLCompiler):
                 tablename = self._truncated_identifier("alias", tablename)
 
             return schema_prefix + \
-                   self.preparer.quote(tablename) + \
-                   "." + name
+                self.preparer.quote(tablename) + \
+                "." + name
 
 
 class KylinIdentifierPreparer(IdentifierPreparer):
     # Kylin is case sensitive, temp hack to turn off name quoting
+
     def __init__(self, dialect, initial_quote='',
                  final_quote=None, escape_quote='', omit_schema=False):
-        super(KylinIdentifierPreparer, self).__init__(dialect, initial_quote, final_quote, escape_quote, omit_schema)
+        super(KylinIdentifierPreparer, self).__init__(
+            dialect, initial_quote, final_quote, escape_quote, omit_schema)
 
 
 class KylinDialect(default.DefaultDialect):
@@ -144,8 +147,13 @@ class KylinDialect(default.DefaultDialect):
         args.update(url.query)
         return [], args
 
-    def get_table_names(self, connection, schema=None, **kw):
+    def get_table_names(self, engine, schema=None, **kw):
+        connection = engine.contextual_connect()
         return connection.connection.list_tables()
+
+    def get_schema_names(self, engine, schema=None, **kw):
+        connection = engine.contextual_connect()
+        return connection.connection.list_schemas()
 
     def has_table(self, connection, table_name, schema=None):
         return table_name in self.get_table_names(connection, table_name, schema)
@@ -153,7 +161,8 @@ class KylinDialect(default.DefaultDialect):
     def has_sequence(self, connection, sequence_name, schema=None):
         return False
 
-    def get_columns(self, connection, table_name, schema=None, **kw):
+    def get_columns(self, engine, table_name, schema=None, **kw):
+        connection = engine.contextual_connect()
         cols = connection.connection.list_columns(table_name)
         return [self._map_column_type(c) for c in cols]
 
@@ -191,4 +200,3 @@ class KylinDialect(default.DefaultDialect):
     def get_unique_constraints(
             self, connection, table_name, schema=None, **kw):
         return []
-
